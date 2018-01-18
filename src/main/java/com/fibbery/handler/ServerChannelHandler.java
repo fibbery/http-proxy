@@ -45,16 +45,13 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(ctx.channel().eventLoop()).
                 channel(ctx.channel().getClass()).
-                handler(new ClientChannelInitializer(ctx.channel()));
-        ChannelFuture future = bootstrap.connect(protocol.getHost(), protocol.getPort());
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    future.channel().writeAndFlush(request);
-                } else {
-                    ctx.channel().close();
-                }
+                handler(new ClientChannelInitializer(ctx.channel(), protocol.isSSL()));
+        ChannelFuture channelFuture = bootstrap.connect(protocol.getHost(), protocol.getPort());
+        channelFuture.addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                future.channel().writeAndFlush(request);
+            } else {
+                ctx.channel().close();
             }
         });
     }

@@ -3,6 +3,7 @@ package com.fibbery.utils;
 import com.fibbery.bean.RequestProtocol;
 import com.fibbery.handler.HttpClientHandler;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -14,18 +15,16 @@ import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
 import io.netty.handler.codec.http.multipart.HttpDataFactory;
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.InputStream;
 import java.net.URI;
-import java.security.KeyStore;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 本例采用的jdk自带的keytool生成的证书
  * @author fibbery
  * @date 18/1/18
  */
@@ -105,17 +104,19 @@ public class HttpClient {
         @Override
         protected void initChannel(SocketChannel ch) throws Exception {
             if (protocol.isSSL()) {
-                TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-                KeyStore ks = KeyStore.getInstance("JKS");
-                InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("nettyclient.jks");
-                ks.load(in, "nettyclient".toCharArray());
-                tmf.init(ks);
-
-                SSLContext context = SSLContext.getInstance("SSL");
-                context.init(null, tmf.getTrustManagers(), null);
-                final SSLEngine engine = context.createSSLEngine();
-                engine.setUseClientMode(true);
-
+//                使用keytool
+//                TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+//                KeyStore ks = KeyStore.getInstance("JKS");
+//                InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("nettyclient.jks");
+//                ks.load(in, "nettyclient".toCharArray());
+//                tmf.init(ks);
+//
+//                SSLContext context = SSLContext.getInstance("SSL");
+//                context.init(null, tmf.getTrustManagers(), null);
+//                final SSLEngine engine = context.createSSLEngine();
+//                engine.setUseClientMode(true);
+                SslContextBuilder contextBuilder= SslContextBuilder.forClient();
+                SSLEngine engine = contextBuilder.build().newEngine(UnpooledByteBufAllocator.DEFAULT);
                 ch.pipeline().addFirst(new SslHandler(engine));
             }
             ch.pipeline().addLast("httpcodec", new HttpClientCodec());
@@ -128,7 +129,7 @@ public class HttpClient {
 
     public static void main(String[] args) throws Exception{
         HashMap<String, String> params = new HashMap<>();
-        HttpRequest requestMethod = getRequestMethod("https://api.zhenai.com/login/userLogin", HttpMethod.GET, params);
+        HttpRequest requestMethod = getRequestMethod("https://api.douban.com/v2/user/~me", HttpMethod.GET, params);
         run(requestMethod);
     }
 }

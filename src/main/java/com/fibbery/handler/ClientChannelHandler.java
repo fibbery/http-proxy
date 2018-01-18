@@ -3,7 +3,7 @@ package com.fibbery.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
 
 /**
  * @author fibbery
@@ -19,8 +19,8 @@ public class ClientChannelHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof HttpRequest) {
-            HttpRequest response = (HttpRequest) msg;
+        if (msg instanceof HttpResponse) {
+            HttpResponse response = (HttpResponse) msg;
             response.headers().add("proxy", "test");
             clientChannel.writeAndFlush(response);
         }
