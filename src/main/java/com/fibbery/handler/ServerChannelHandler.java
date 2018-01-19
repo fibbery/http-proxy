@@ -34,6 +34,7 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
                 ctx.writeAndFlush(response);
                 ctx.pipeline().remove("codec");
                 ctx.pipeline().remove("aggregator");
+                return;
             }
 
             //连接目标服务器
