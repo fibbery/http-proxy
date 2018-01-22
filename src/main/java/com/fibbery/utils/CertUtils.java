@@ -1,17 +1,30 @@
 package com.fibbery.utils;
 
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.Date;
 
 /**
  * 工具类针对的是openss生成的密钥和证书
@@ -25,10 +38,11 @@ import java.util.Base64;
  * 4. openssl req -new -key rsa_private_key.pem -out rsa_public_key.csr
  * # 生成证书并且签名
  * 5. openssl x509 -req -days 3650 -in rsa_public_key.csr -signkey rsa_private_key.pem -out rsa_public_key.crt
+ *
  * @author fibbery
  * @date 18/1/19
  **/
-public class CerUtils {
+public class CertUtils {
 
     /**
      * 从文件流中导入证书信息
@@ -41,6 +55,33 @@ public class CerUtils {
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
         return (X509Certificate) factory.generateCertificate(in);
     }
+
+    /**
+     * 使用crypto workshop动态生成证书
+     *
+     * @param host      域名
+     * @param publicKey 公钥
+     * @return 证书实体
+     */
+    public static X509Certificate genCert(String host, PrivateKey privateKey, PublicKey publicKey) throws Exception{
+        String issuer = "C=CN, ST=Guangdong, L=Shenzhen, O=jiangnenghua, OU=study, CN=http-proxy";
+        String subject = "C=CN, ST=Guangdong, L=Shenzhen, O=jiangnenghua, OU=study, CN=" + host;
+
+        LocalDateTime notBefore = LocalDateTime.now();
+        LocalDateTime notAfter = notBefore.plus(12, ChronoUnit.HOURS);
+        //serial采用时间戳+4位随机数避免验证出现证书不安全的问题
+        JcaX509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
+                new X500Name(issuer),
+                BigInteger.valueOf(System.currentTimeMillis() + (long) (Math.random() * 10000) + 1000),
+                Date.from(notBefore.atZone(ZoneId.systemDefault()).toInstant()),
+                Date.from(notAfter.atZone(ZoneId.systemDefault()).toInstant()),
+                new X500Name(subject),
+                publicKey
+        );
+        ContentSigner signer = new JcaContentSignerBuilder("SHA256WITHRSAENCRYPTION").build(privateKey);
+        return new JcaX509CertificateConverter().getCertificate(builder.build(signer));
+    }
+
 
     /**
      * 从pkcs8格式的密钥文件从读取出私钥

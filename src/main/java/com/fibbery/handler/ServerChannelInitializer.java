@@ -1,15 +1,10 @@
 package com.fibbery.handler;
 
+import com.fibbery.bean.ServerConfig;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslHandler;
-
-import javax.net.ssl.SSLEngine;
-import java.io.InputStream;
 
 
 /**
@@ -17,6 +12,13 @@ import java.io.InputStream;
  * @date 18/1/17
  */
 public class ServerChannelInitializer extends ChannelInitializer<SocketChannel> {
+
+    private ServerConfig config;
+
+    public ServerChannelInitializer(ServerConfig config) {
+        this.config = config;
+    }
+
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
 //        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
@@ -28,16 +30,14 @@ public class ServerChannelInitializer extends ChannelInitializer<SocketChannel> 
 //        context.init(kmf.getKeyManagers(), null, null);
 //        SSLEngine sslEngine = context.createSSLEngine();
 //        sslEngine.setUseClientMode(false);
-        InputStream certIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_public_key.crt");
-        InputStream keyIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_private_key_pkcs8.pem");
-        SslContext sslContext = SslContextBuilder.forServer(certIn, keyIn).build();
-        SSLEngine sslEngine = sslContext.newEngine(ch.alloc());
-        sslEngine.setUseClientMode(false);
-
-
-        ch.pipeline().addFirst("ssl", new SslHandler(sslEngine));
+//        ------------------------------------------------------
+//        InputStream certIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_public_key.crt");
+//        InputStream keyIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_private_key_pkcs8.pem");
+//        SslContext sslContext = SslContextBuilder.forServer(certIn, keyIn).build();
+//        SSLEngine sslEngine = sslContext.newEngine(ch.alloc());
+//        sslEngine.setUseClientMode(false);
         ch.pipeline().addLast("codec", new HttpServerCodec());
         ch.pipeline().addLast("aggregator", new HttpObjectAggregator(65536)); //64k
-        ch.pipeline().addLast("handler", new ServerChannelHandler());
+        ch.pipeline().addLast("handler", new ServerChannelHandler(config));
     }
 }
