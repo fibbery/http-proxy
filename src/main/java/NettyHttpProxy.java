@@ -18,7 +18,7 @@ public class NettyHttpProxy {
         bootstrap.group(group);
         bootstrap.channel(NioServerSocketChannel.class);
         bootstrap.childHandler(new ServerChannelInitializer());
-        ChannelFuture future = bootstrap.bind("10.1.12.90",8080).sync();
+        ChannelFuture future = bootstrap.bind("10.1.12.90",9999).sync();
         System.out.println("服务器启动，端口8080");
         future.channel().closeFuture().sync();
     }

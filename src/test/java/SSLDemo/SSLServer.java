@@ -27,7 +27,7 @@ public class SSLServer {
         ks.load(in, "nettyserver".toCharArray());
         kmf = KeyManagerFactory.getInstance("SunX509");
         kmf.init(ks, "nettyserver".toCharArray());
-        SSLContext sslContext = SSLContext.getInstance("SSL");
+        SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(kmf.getKeyManagers(), null, null);
         final SSLEngine engine = sslContext.createSSLEngine();
         engine.setUseClientMode(false);

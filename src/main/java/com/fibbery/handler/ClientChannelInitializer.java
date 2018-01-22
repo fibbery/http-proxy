@@ -1,6 +1,5 @@
 package com.fibbery.handler;
 
-import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
@@ -30,7 +29,7 @@ public class ClientChannelInitializer extends ChannelInitializer<SocketChannel> 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
         if (isSSL) {
-            SSLEngine engine = SslContextBuilder.forClient().build().newEngine(UnpooledByteBufAllocator.DEFAULT);
+            SSLEngine engine = SslContextBuilder.forClient().build().newEngine(ch.alloc());
             ch.pipeline().addFirst(new SslHandler(engine));
         }
         ch.pipeline().addLast("codec", new HttpClientCodec());
