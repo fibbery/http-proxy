@@ -6,6 +6,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
 import java.security.KeyPair;
@@ -16,9 +17,10 @@ import java.security.KeyPair;
  * @author fibbery
  * @date 18/1/17
  */
+@Slf4j
 public class NettyHttpProxy {
 
-    public static void main(String[] args) throws Exception {
+    public void start(int port)throws Exception{
         NioEventLoopGroup group = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(group);
@@ -33,8 +35,12 @@ public class NettyHttpProxy {
         config.setServerPrivateKey(pair.getPrivate());
         config.setServerPublicKey(pair.getPublic());
         bootstrap.childHandler(new ServerChannelInitializer(config));
-        ChannelFuture future = bootstrap.bind("10.1.12.90",9999).sync();
-        System.out.println("服务器启动，端口8080");
+        ChannelFuture future = bootstrap.bind(port).sync();
+        log.info("server start at port {}", port);
         future.channel().closeFuture().sync();
+    }
+
+    public static void main(String[] args) throws Exception {
+        new NettyHttpProxy().start(4396);
     }
 }

@@ -2,8 +2,10 @@ package com.fibbery.handler;
 
 import com.fibbery.bean.RequestProtocol;
 import com.fibbery.bean.ServerConfig;
+import com.fibbery.utils.CertUtils;
 import com.fibbery.utils.RequestUtils;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -11,6 +13,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
@@ -18,9 +22,14 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
  * @author fibbery
  * @date 18/1/17
  */
+@Slf4j
 public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
 
     private ServerConfig config;
+
+    private String host;
+
+    private int port;
 
     public ServerChannelHandler(ServerConfig config) {
         this.config = config;
@@ -32,10 +41,8 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
             HttpRequest request = (HttpRequest) msg;
             RequestProtocol protocol = RequestUtils.getRequestProtocol(request);
             //错误请求
-            if (protocol == null) {
+            if (StringUtils.isEmpty(protocol.getHost())) {
                 ctx.channel().close();
-                return;
-            } else if (request.uri() == "/bad-request") {
                 return;
             }
 
@@ -43,18 +50,29 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
             //建立代理握手
             if (requestMethod == HttpMethod.CONNECT) {
                 HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, OK);
+                this.host = protocol.getHost();
+                this.port = protocol.getPort();
                 ctx.writeAndFlush(response);
-                ctx.pipeline().remove("codec");
-                ctx.pipeline().remove("aggregator");
+                ctx.channel().pipeline().remove("codec");
+                ctx.channel().pipeline().remove("aggregator");
                 return;
             }
             //连接目标服务器
+            log.info(">>>>>>>>>>>>>> request uri is : " + request.uri());
             connectToTargetServer(ctx, request, protocol);
         } else {
-            //https请求无法解析，加入sslhandle之后重新再走一遍pipeline
-            SslContext context = SslContextBuilder.forServer(config.getCertPrivateKey(), config.getClientCert()).build();
-            ctx.pipeline().addFirst(context.newHandler(ctx.channel().alloc()));
-            ctx.pipeline().fireChannelRead(msg);
+            //https://tools.ietf.org/html/rfc6101#section-5.1
+            //ssl握手协议首字母是22
+            ByteBuf buf = (ByteBuf) msg;
+            if (buf.getByte(0) == 22) {
+                log.info("-----------handshake");
+                SslContext context = SslContextBuilder.forServer(
+                        config.getServerPrivateKey(),
+                        CertUtils.genCert(host, config.getServerPrivateKey(), config.getServerPublicKey())).build();
+                ctx.channel().pipeline().addFirst(context.newHandler(ctx.channel().alloc()));
+                ctx.channel().pipeline().fireChannelRead(msg);
+                return;
+            }
         }
     }
 

@@ -31,8 +31,7 @@ public class ClientChannelHandler extends ChannelInboundHandlerAdapter {
             if (msg instanceof FullHttpResponse) {
                 FullHttpResponse fullResponse = (FullHttpResponse) msg;
                 String contentType = fullResponse.headers().get(HttpHeaderNames.CONTENT_TYPE);
-                System.out.println(contentType);
-                if (contentType.contains("application/json")) {
+                if (contentType != null && contentType.contains("application/json")) {
                     System.out.println("this is a json reply");
                 }
             }
