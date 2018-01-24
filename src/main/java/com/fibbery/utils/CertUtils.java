@@ -1,6 +1,8 @@
 package com.fibbery.utils;
 
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
@@ -23,8 +25,12 @@ import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * 工具类针对的是openss生成的密钥和证书
@@ -63,8 +69,7 @@ public class CertUtils {
      * @param publicKey 公钥
      * @return 证书实体
      */
-    public static X509Certificate genCert(String host, PrivateKey privateKey, PublicKey publicKey) throws Exception{
-        String issuer = "C=CN, ST=Guangdong, L=Shenzhen, O=jiangnenghua, OU=study, CN=http-proxy";
+    public static X509Certificate genCert(String host, String issuer, PrivateKey privateKey, PublicKey publicKey) throws Exception {
         String subject = "C=CN, ST=Guangdong, L=Shenzhen, O=jiangnenghua, OU=study, CN=" + host;
 
         LocalDateTime notBefore = LocalDateTime.now();
@@ -78,6 +83,11 @@ public class CertUtils {
                 new X500Name(subject),
                 publicKey
         );
+`
+        //增加SNA拓展，防止浏览器提示证书不安全
+        GeneralName generalName = new GeneralName(GeneralName.dNSName, host);
+        builder.addExtension(Extension.subjectAlternativeName, false, generalName);
+
         ContentSigner signer = new JcaContentSignerBuilder("SHA256WITHRSAENCRYPTION").build(privateKey);
         return new JcaX509CertificateConverter().getCertificate(builder.build(signer));
     }
@@ -135,5 +145,11 @@ public class CertUtils {
         X509Certificate x509Certificate = loadCert(Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_public_key.crt"));
         int version = x509Certificate.getVersion();
         System.out.println(version);
+    }
+
+    public static String getIssuer(X509Certificate cert) {
+        List<String> tempList = Arrays.asList(cert.getIssuerDN().toString().split(","));
+        return IntStream.rangeClosed(0, tempList.size() - 1)
+                .mapToObj(i -> tempList.get(tempList.size() - i - 1)).collect(Collectors.joining(","));
     }
 }

@@ -2,7 +2,7 @@ package com.fibbery.handler;
 
 import com.fibbery.bean.RequestProtocol;
 import com.fibbery.bean.ServerConfig;
-import com.fibbery.utils.CertUtils;
+import com.fibbery.utils.CertPool;
 import com.fibbery.utils.RequestUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -66,9 +66,7 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
             ByteBuf buf = (ByteBuf) msg;
             if (buf.getByte(0) == 22) {
                 log.info("-----------handshake");
-                SslContext context = SslContextBuilder.forServer(
-                        config.getServerPrivateKey(),
-                        CertUtils.genCert(host, config.getServerPrivateKey(), config.getServerPublicKey())).build();
+                SslContext context = SslContextBuilder.forServer(config.getServerPrivateKey(), CertPool.getCert(host, config)).build();
                 ctx.channel().pipeline().addFirst(context.newHandler(ctx.channel().alloc()));
                 ctx.channel().pipeline().fireChannelRead(msg);
                 return;

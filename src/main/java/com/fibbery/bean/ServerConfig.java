@@ -19,6 +19,8 @@ public class ServerConfig {
 
     private PrivateKey certPrivateKey; //证书对应的私钥
 
+    private String issuer; //证书签发人
+
     private PrivateKey serverPrivateKey; //服务器持有的私钥
 
     private PublicKey serverPublicKey; // 服务器持有的公钥

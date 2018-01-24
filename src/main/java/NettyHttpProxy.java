@@ -30,6 +30,7 @@ public class NettyHttpProxy {
         InputStream certIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_public_key.crt");
         InputStream privateKeyIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_private_key_pkcs8.pem");
         config.setClientCert(CertUtils.loadCert(certIn));
+        config.setIssuer(CertUtils.getIssuer(config.getClientCert()));
         config.setCertPrivateKey(CertUtils.loadPrivateKey(privateKeyIn));
         KeyPair pair = RsaUtils.generateRsaKeyPair();
         config.setServerPrivateKey(pair.getPrivate());
@@ -41,6 +42,6 @@ public class NettyHttpProxy {
     }
 
     public static void main(String[] args) throws Exception {
-        new NettyHttpProxy().start(4396);
+        new NettyHttpProxy().start(4444);
     }
 }
