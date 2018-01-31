@@ -51,12 +51,14 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
                 this.port = protocol.getPort();
                 ctx.writeAndFlush(response);
                 ctx.channel().pipeline().remove("codec");
-                ctx.channel().pipeline().remove("aggregator");
+                //ctx.channel().pipeline().remove("aggregator");
                 return;
             }
             //连接目标服务器
             log.info(">>>>>>>>>>>>>> request uri is : " + request.uri());
-            connectToTargetServer(ctx, request, protocol);
+            connectToTargetServer(ctx.channel(), request, protocol);
+        } else if (msg instanceof HttpContent) {
+            //
         } else {
             //https://tools.ietf.org/html/rfc6101#section-5.1
             //ssl握手协议首字母是22
@@ -64,11 +66,14 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
             if (buf.getByte(0) == 22) {
                 log.info("-----------handshake");
                 SslContext context = SslContextBuilder.forServer(config.getServerPrivateKey(), CertPool.getCert(host, config)).build();
+                ctx.channel().pipeline().addFirst("httpCodec", new HttpServerCodec());
                 ctx.channel().pipeline().addFirst(context.newHandler(ctx.channel().alloc()));
+                //ctx.channel().pipeline().addLast("aggregator", new HttpObjectAggregator(64 * 1024));
                 ctx.channel().pipeline().fireChannelRead(msg);
                 return;
             }
-            handleProxyData(ctx.channel(), msg);
+            RequestProtocol protocol = new RequestProtocol(host, port, true);
+            handleProxyData(ctx.channel(), msg, protocol);
         }
     }
 
@@ -77,21 +82,22 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
      * @param channel
      * @param msg
      */
-    private void handleProxyData(Channel channel, Object msg) {
-        log.info("begin handle proxy data");
+    private void handleProxyData(Channel channel, Object msg, RequestProtocol protocol) {
+        log.info("--------begin handle proxy data");
+
     }
 
-    private void connectToTargetServer(final ChannelHandlerContext ctx, final HttpRequest request, RequestProtocol protocol) {
+    private void connectToTargetServer(final Channel channel, final HttpRequest request, RequestProtocol protocol) {
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group(ctx.channel().eventLoop()).
-                channel(ctx.channel().getClass()).
-                handler(new ClientChannelInitializer(ctx.channel(), config, protocol.isSSL()));
+        bootstrap.group(channel.eventLoop()).
+                channel(channel.getClass()).
+                handler(new ClientChannelInitializer(channel, config, protocol.isSSL()));
         ChannelFuture channelFuture = bootstrap.connect(protocol.getHost(), protocol.getPort());
         channelFuture.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 future.channel().writeAndFlush(request);
             } else {
-                ctx.channel().close();
+                channel.close();
             }
         });
     }

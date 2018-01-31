@@ -3,7 +3,6 @@ package com.fibbery.handler;
 import com.fibbery.bean.ServerConfig;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 
 
@@ -37,7 +36,7 @@ public class ServerChannelInitializer extends ChannelInitializer<SocketChannel> 
 //        SSLEngine sslEngine = sslContext.newEngine(ch.alloc());
 //        sslEngine.setUseClientMode(false);
         ch.pipeline().addLast("codec", new HttpServerCodec());
-        ch.pipeline().addLast("aggregator", new HttpObjectAggregator(65536)); //64k
+        //ch.pipeline().addLast("aggregator", new HttpObjectAggregator(65536)); //64k
         ch.pipeline().addLast("handler", new ServerChannelHandler(config));
     }
 }
