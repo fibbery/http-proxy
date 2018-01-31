@@ -70,8 +70,7 @@ public class CertUtils {
      * @return 证书实体
      */
     public static X509Certificate genCert(String host, String issuer, PrivateKey privateKey, PublicKey publicKey) throws Exception {
-        String subject = "C=CN, ST=Guangdong, L=Shenzhen, O=jiangnenghua, OU=study, CN=" + host;
-
+        String subject = issuer.replaceAll("CN=[a-zA-Z]+", "CN=" + host);
         LocalDateTime notBefore = LocalDateTime.now();
         LocalDateTime notAfter = notBefore.plus(12, ChronoUnit.HOURS);
         //serial采用时间戳+4位随机数避免验证出现证书不安全的问题
@@ -132,6 +131,14 @@ public class CertUtils {
         return buffer.toString();
     }
 
+
+
+    public static String getIssuer(X509Certificate cert) {
+        List<String> tempList = Arrays.asList(cert.getIssuerDN().toString().split(", "));
+        return IntStream.rangeClosed(0, tempList.size() - 1)
+                .mapToObj(i -> tempList.get(tempList.size() - i - 1)).collect(Collectors.joining(", "));
+    }
+
     public static void main(String[] args) throws Exception {
         RSAPrivateKey privateKey = loadPrivateKey(Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_private_key_pkcs8.pem"));
         RSAPublicKey publicKey = loadPublicKey(Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_public_key.pem"));
@@ -145,11 +152,8 @@ public class CertUtils {
         X509Certificate x509Certificate = loadCert(Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_public_key.crt"));
         int version = x509Certificate.getVersion();
         System.out.println(version);
-    }
-
-    public static String getIssuer(X509Certificate cert) {
-        List<String> tempList = Arrays.asList(cert.getIssuerDN().toString().split(","));
-        return IntStream.rangeClosed(0, tempList.size() - 1)
-                .mapToObj(i -> tempList.get(tempList.size() - i - 1)).collect(Collectors.joining(","));
+        String issuer = "C=CN, ST=Guangdong, L=Shenzhen, O=jiangnenghua, OU=study, CN=jiangnenghua, EMAIL=jiangnenghua1992@gmail.com";
+        String replace = issuer.replaceAll("CN=[a-zA-Z]+", "CN=host");
+        System.out.println(replace);
     }
 }
