@@ -6,10 +6,7 @@ import com.fibbery.utils.CertPool;
 import com.fibbery.utils.RequestUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -71,7 +68,16 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
                 ctx.channel().pipeline().fireChannelRead(msg);
                 return;
             }
+            handleProxyData(ctx.channel(), msg);
         }
+    }
+
+    /**
+     * 处理需要代理请求的数据
+     * @param channel
+     * @param msg
+     */
+    private void handleProxyData(Channel channel, Object msg) {
     }
 
     private void connectToTargetServer(final ChannelHandlerContext ctx, final HttpRequest request, RequestProtocol protocol) {
