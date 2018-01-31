@@ -78,6 +78,7 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
      * @param msg
      */
     private void handleProxyData(Channel channel, Object msg) {
+        log.info("begin handle proxy data");
     }
 
     private void connectToTargetServer(final ChannelHandlerContext ctx, final HttpRequest request, RequestProtocol protocol) {
