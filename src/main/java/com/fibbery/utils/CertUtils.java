@@ -23,9 +23,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
@@ -65,22 +62,23 @@ public class CertUtils {
 
     /**
      * 使用crypto workshop动态生成证书
-     *
-     * @param host      域名
+     * @param host 域名
+     * @param issuer 签发者信息
      * @param caPrivateKey CA证书私钥
-     * @param publicKey 公钥
-     * @return 证书实体
+     * @param publicKey 生成证书的公钥
+     * @param notBefore 过期时间(起)
+     * @param notAfter 过期时间(终)
+     * @return
+     * @throws Exception
      */
-    public static X509Certificate genCert(String host, String issuer, PrivateKey caPrivateKey, PublicKey publicKey) throws Exception {
+    public static X509Certificate genCert(String host, String issuer, PrivateKey caPrivateKey, PublicKey publicKey, Date notBefore, Date notAfter) throws Exception {
         String subject = issuer.replaceAll("CN=[a-zA-Z]+", "CN=" + host);
-        LocalDateTime notBefore = LocalDateTime.now();
-        LocalDateTime notAfter = notBefore.plus(12, ChronoUnit.HOURS);
         //serial采用时间戳+4位随机数避免验证出现证书不安全的问题
         JcaX509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
                 new X500Name(issuer),
                 BigInteger.valueOf(System.currentTimeMillis() + (long) (Math.random() * 10000) + 1000),
-                Date.from(notBefore.atZone(ZoneId.systemDefault()).toInstant()),
-                Date.from(notAfter.atZone(ZoneId.systemDefault()).toInstant()),
+                notBefore,
+                notAfter,
                 new X500Name(subject),
                 publicKey
         );

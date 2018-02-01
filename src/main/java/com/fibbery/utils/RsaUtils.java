@@ -1,7 +1,10 @@
 package com.fibbery.utils;
 
 import javax.crypto.Cipher;
-import java.security.*;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -23,7 +26,7 @@ public class RsaUtils {
         KeyPair keyPair = null;
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance(KEY_ALGORITHM);
-            generator.initialize(1024); //一般设置512或者1024
+            generator.initialize(2048); //一般设置512或者1024
             keyPair = generator.generateKeyPair();
             return keyPair;
         } catch (Exception e) {
