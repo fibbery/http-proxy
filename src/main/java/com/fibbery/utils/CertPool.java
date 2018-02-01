@@ -18,7 +18,7 @@ public class CertPool {
         if(StringUtils.isEmpty(host)) return null;
         X509Certificate cert = certs.get(host);
         if (cert == null) {
-            certs.put(host, CertUtils.genCert(host, config.getIssuer(), config.getServerPrivateKey(), config.getServerPublicKey()));
+            certs.put(host, CertUtils.genCert(host, config.getIssuer(), config.getCertPrivateKey(), config.getServerPublicKey()));
             cert = certs.get(host);
         }
         return cert;

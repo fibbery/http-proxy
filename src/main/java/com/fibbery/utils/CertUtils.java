@@ -66,10 +66,11 @@ public class CertUtils {
      * 使用crypto workshop动态生成证书
      *
      * @param host      域名
+     * @param caPrivateKey CA证书私钥
      * @param publicKey 公钥
      * @return 证书实体
      */
-    public static X509Certificate genCert(String host, String issuer, PrivateKey privateKey, PublicKey publicKey) throws Exception {
+    public static X509Certificate genCert(String host, String issuer, PrivateKey caPrivateKey, PublicKey publicKey) throws Exception {
         String subject = issuer.replaceAll("CN=[a-zA-Z]+", "CN=" + host);
         LocalDateTime notBefore = LocalDateTime.now();
         LocalDateTime notAfter = notBefore.plus(12, ChronoUnit.HOURS);
@@ -87,7 +88,7 @@ public class CertUtils {
         GeneralName generalName = new GeneralName(GeneralName.dNSName, host);
         builder.addExtension(Extension.subjectAlternativeName, false, generalName);
 
-        ContentSigner signer = new JcaContentSignerBuilder("SHA256WITHRSAENCRYPTION").build(privateKey);
+        ContentSigner signer = new JcaContentSignerBuilder("SHA1WITHRSAENCRYPTION").build(caPrivateKey);
         return new JcaX509CertificateConverter().getCertificate(builder.build(signer));
     }
 

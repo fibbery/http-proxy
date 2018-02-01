@@ -27,8 +27,8 @@ public class NettyHttpProxy {
         bootstrap.channel(NioServerSocketChannel.class);
         //传入服务器配置
         ServerConfig config = new ServerConfig();
-        InputStream certIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_public_key.crt");
-        InputStream privateKeyIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("rsa_private_key_pkcs8.pem");
+        InputStream certIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("ca.crt");
+        InputStream privateKeyIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("ca_private_pkcs8.pem");
         config.setClientCert(CertUtils.loadCert(certIn));
         config.setIssuer(CertUtils.getIssuer(config.getClientCert()));
         config.setCertPrivateKey(CertUtils.loadPrivateKey(privateKeyIn));
