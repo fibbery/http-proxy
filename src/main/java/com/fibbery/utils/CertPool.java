@@ -4,6 +4,7 @@ import com.fibbery.bean.ServerConfig;
 import org.apache.commons.lang3.StringUtils;
 
 import java.security.cert.X509Certificate;
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -16,10 +17,14 @@ public class CertPool {
 
     public static X509Certificate getCert(String host, ServerConfig config)throws Exception{
         if(StringUtils.isEmpty(host)) return null;
-        X509Certificate cert = certs.get(host);
+        String key = host.trim().toLowerCase();
+        X509Certificate cert = certs.get(key);
         if (cert == null) {
-            certs.put(host, CertUtils.genCert(host, config.getIssuer(), config.getCertPrivateKey(), config.getServerPublicKey(), config.getClientCert().getNotBefore(), config.getClientCert().getNotAfter()));
-            cert = certs.get(host);
+            String issuer = config.getClientCert().getIssuerDN().toString();
+            Date notBefore = config.getClientCert().getNotBefore();
+            Date notAfter = config.getClientCert().getNotAfter();
+            cert = CertUtils.genCert(host, issuer, config.getCertPrivateKey(), config.getServerPublicKey(), notBefore, notAfter);
+            certs.put(key, cert);
         }
         return cert;
     }

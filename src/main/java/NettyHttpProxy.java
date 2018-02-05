@@ -1,7 +1,6 @@
 import com.fibbery.bean.ServerConfig;
 import com.fibbery.handler.ServerChannelInitializer;
 import com.fibbery.utils.CertUtils;
-import com.fibbery.utils.RsaUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -29,12 +28,14 @@ public class NettyHttpProxy {
         ServerConfig config = new ServerConfig();
         InputStream certIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("ca.crt");
         InputStream privateKeyIn = Thread.currentThread().getContextClassLoader().getResourceAsStream("ca_private_pkcs8.pem");
-        config.setClientCert(CertUtils.loadCert(certIn));
-        config.setIssuer(CertUtils.getIssuer(config.getClientCert()));
+        //证书配置
         config.setCertPrivateKey(CertUtils.loadPrivateKey(privateKeyIn));
-        KeyPair pair = RsaUtils.generateRsaKeyPair();
+        config.setClientCert(CertUtils.loadCert(certIn));
+        //生成公私钥
+        KeyPair pair = CertUtils.genRsaKeyPair();
         config.setServerPrivateKey(pair.getPrivate());
         config.setServerPublicKey(pair.getPublic());
+
         bootstrap.childHandler(new ServerChannelInitializer(config));
         ChannelFuture future = bootstrap.bind(port).sync();
         log.info("server start at port {}", port);

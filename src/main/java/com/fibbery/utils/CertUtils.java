@@ -1,34 +1,25 @@
 package com.fibbery.utils;
 
-import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.x509.X509V3CertificateGenerator;
 
+import javax.security.auth.x500.X500Principal;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * 工具类针对的是openss生成的密钥和证书
@@ -47,6 +38,19 @@ import java.util.stream.IntStream;
  * @date 18/1/19
  **/
 public class CertUtils {
+
+    /**
+     * 使用该加密库生成rsa非对称密钥
+     * @return
+     * @throws NoSuchProviderException
+     * @throws NoSuchAlgorithmException
+     */
+    public static KeyPair genRsaKeyPair() throws NoSuchProviderException, NoSuchAlgorithmException {
+        Security.addProvider(new BouncyCastleProvider());
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "BC");
+        generator.initialize(2048, new SecureRandom());
+        return generator.generateKeyPair();
+    }
 
     /**
      * 从文件流中导入证书信息
@@ -73,23 +77,18 @@ public class CertUtils {
      */
     public static X509Certificate genCert(String host, String issuer, PrivateKey caPrivateKey, PublicKey publicKey, Date notBefore, Date notAfter) throws Exception {
         String subject = issuer.replaceAll("CN=[a-zA-Z]+", "CN=" + host);
-        //serial采用时间戳+4位随机数避免验证出现证书不安全的问题
-        JcaX509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
-                new X500Name(issuer),
-                BigInteger.valueOf(System.currentTimeMillis() + (long) (Math.random() * 10000) + 1000),
-                notBefore,
-                notAfter,
-                new X500Name(subject),
-                publicKey
-        );
-
-        //增加SNA拓展，防止浏览器提示证书不安全
-        GeneralName generalName = new GeneralName(GeneralName.dNSName, host);
-        GeneralNames names = new GeneralNames(generalName);
-        builder.addExtension(Extension.subjectAlternativeName, false, names);
-
-        ContentSigner signer = new JcaContentSignerBuilder("SHA256WITHRSAENCRYPTION").build(caPrivateKey);
-        return new JcaX509CertificateConverter().getCertificate(builder.build(signer));
+        X509V3CertificateGenerator generator = new X509V3CertificateGenerator();
+        generator.reset();
+        generator.setSerialNumber(BigInteger.valueOf(System.currentTimeMillis() + (long) (Math.random() * 10000) + 1000));
+        generator.setIssuerDN(new X500Principal(issuer));
+        generator.setNotBefore(notBefore);
+        generator.setNotAfter(notAfter);
+        generator.setSubjectDN(new X500Principal(subject));
+        generator.setPublicKey(publicKey);
+        generator.setSignatureAlgorithm("SHA256WithRSAEncryption");
+        GeneralNames generalNames = new GeneralNames(new GeneralName(GeneralName.dNSName, host));
+        generator.addExtension(Extension.subjectAlternativeName, false, generalNames);
+        return generator.generate(caPrivateKey);
     }
 
 
@@ -130,14 +129,6 @@ public class CertUtils {
             }
         }
         return buffer.toString();
-    }
-
-
-
-    public static String getIssuer(X509Certificate cert) {
-        List<String> tempList = Arrays.asList(cert.getIssuerDN().toString().split(", "));
-        return IntStream.rangeClosed(0, tempList.size() - 1)
-                .mapToObj(i -> tempList.get(tempList.size() - i - 1)).collect(Collectors.joining(", "));
     }
 
     public static void main(String[] args) throws Exception {
