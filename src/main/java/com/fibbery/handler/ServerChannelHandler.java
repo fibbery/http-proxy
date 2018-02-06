@@ -84,12 +84,15 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
         EventLoopGroup group = new NioEventLoopGroup();
         bootstrap.group(group).channel(NioSocketChannel.class).handler(new ClientChannelInitializer(channel, protocol.isSSL()));
         ChannelFuture future = bootstrap.connect(protocol.getHost(), protocol.getPort()).sync();
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                future.channel().writeAndFlush(msg);
-            }
-        });
+        future.addListener((ChannelFutureListener) clientFuture -> clientFuture.channel().writeAndFlush(msg));
         future.channel().closeFuture();
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        if (cause instanceof ConnectTimeoutException) {
+            log.error("连接 {} : {} 超时", host, port);
+        }
+        super.exceptionCaught(ctx, cause);
     }
 }
